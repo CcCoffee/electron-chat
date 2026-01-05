@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { Upload, FileText, X, Calendar, TrendingUp } from 'lucide-react'
+import { Upload, FileText, X, Calendar, TrendingUp, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -309,6 +309,156 @@ export function StrategyComparisonPage() {
     return Array.from(months).sort((a, b) => a - b)
   }
 
+  const getStrategyStats = (strategy: StrategyData): {
+    count: number
+    positiveCount?: number
+    negativeCount?: number
+    zeroCount?: number
+    winRate?: number
+    avgReturn: number
+    maxReturn: number
+    minReturn: number
+    stdDev?: number
+    cumulativeReturn: number
+    latestReturn?: number
+    monthlyReturns?: number[]
+  } => {
+    if (selectedMonth !== null) {
+      const monthlyReturns: number[] = []
+      
+      const yearData: Record<number, Array<{date: string, returnRate: number}>> = {}
+      strategy.data.forEach(point => {
+        if (point.month === selectedMonth) {
+          if (!yearData[point.year]) {
+            yearData[point.year] = []
+          }
+          yearData[point.year].push({
+            date: point.date,
+            returnRate: point.returnRate
+          })
+        }
+      })
+
+      Object.entries(yearData).forEach(([year, points]) => {
+        if (points.length >= 1) {
+          const sortedPoints = points.sort((a, b) => a.date.localeCompare(b.date))
+          const lastDayOfMonth = sortedPoints[sortedPoints.length - 1]
+          const firstDayOfMonth = sortedPoints[0]
+          
+          const yearNum = parseInt(year)
+          const prevYear = selectedMonth === 1 ? yearNum - 1 : yearNum
+          const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1
+          
+          const prevMonthLastDay = strategy.data
+            .filter(d => d.year === prevYear && d.month === prevMonth)
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .pop()
+
+          let initialReturnRate: number
+          if (prevMonthLastDay) {
+            initialReturnRate = prevMonthLastDay.returnRate
+          } else {
+            initialReturnRate = firstDayOfMonth.returnRate
+          }
+
+          const monthlyReturn = ((1 + lastDayOfMonth.returnRate / 100) / (1 + initialReturnRate / 100) - 1) * 100
+          monthlyReturns.push(monthlyReturn)
+        }
+      })
+
+      const count = monthlyReturns.length
+      const positiveCount = monthlyReturns.filter(r => r > 0).length
+      const negativeCount = monthlyReturns.filter(r => r < 0).length
+      const zeroCount = monthlyReturns.filter(r => r === 0).length
+      const avgReturn = monthlyReturns.reduce((sum, r) => sum + r, 0) / count
+      const maxReturn = Math.max(...monthlyReturns)
+      const minReturn = Math.min(...monthlyReturns)
+      const variance = monthlyReturns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / count
+      const stdDev = Math.sqrt(variance)
+      const cumulativeReturn = monthlyReturns.reduce((sum, r) => (1 + sum / 100) * (1 + r / 100) - 1, 0) * 100
+
+      return {
+        count,
+        positiveCount,
+        negativeCount,
+        zeroCount,
+        winRate: count > 0 ? (positiveCount / count) * 100 : 0,
+        avgReturn,
+        maxReturn,
+        minReturn,
+        stdDev,
+        cumulativeReturn,
+        monthlyReturns
+      }
+    } else {
+      const returns = strategy.data.map(d => d.returnRate)
+      const latestData = strategy.data[strategy.data.length - 1]
+      const maxReturn = Math.max(...returns)
+      const minReturn = Math.min(...returns)
+      
+      return {
+        count: strategy.data.length,
+        latestReturn: latestData?.returnRate ?? 0,
+        maxReturn,
+        minReturn,
+        avgReturn: 0,
+        cumulativeReturn: latestData?.returnRate ?? 0
+      }
+    }
+  }
+
+  interface MonthlyStats {
+    count: number
+    positiveCount: number
+    negativeCount: number
+    zeroCount: number
+    winRate: number
+    avgReturn: number
+    maxReturn: number
+    minReturn: number
+    stdDev: number
+    cumulativeReturn: number
+    monthlyReturns: number[]
+  }
+
+  const getRankingInfo = (): {
+    bestAvg: { name: string } & MonthlyStats
+    bestWinRate: { name: string } & MonthlyStats
+    lowestRisk: { name: string } & MonthlyStats
+    rankingDetails: {
+      avg: Array<{ name: string; rank: number }>
+      winRate: Array<{ name: string; rank: number }>
+      stdDev: Array<{ name: string; rank: number }>
+    }
+  } | null => {
+    if (selectedMonth === null || strategies.length < 2) return null
+    
+    const stats: Array<{ name: string } & MonthlyStats> = strategies.map(s => {
+      const stats = getStrategyStats(s) as MonthlyStats
+      return {
+        name: s.name,
+        ...stats
+      }
+    })
+    
+    const sortedByAvg = [...stats].sort((a, b) => b.avgReturn - a.avgReturn)
+    const sortedByWinRate = [...stats].sort((a, b) => b.winRate - a.winRate)
+    const sortedByStdDev = [...stats].sort((a, b) => a.stdDev - b.stdDev)
+    
+    return {
+      bestAvg: sortedByAvg[0],
+      bestWinRate: sortedByWinRate[0],
+      lowestRisk: sortedByStdDev[0],
+      rankingDetails: {
+        avg: sortedByAvg.map((s, i) => ({ name: s.name, rank: i + 1 })),
+        winRate: sortedByWinRate.map((s, i) => ({ name: s.name, rank: i + 1 })),
+        stdDev: sortedByStdDev.map((s, i) => ({ name: s.name, rank: i + 1 }))
+      }
+    }
+  }
+
+  const rankingInfo = getRankingInfo()
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -479,47 +629,169 @@ export function StrategyComparisonPage() {
           <Card>
             <CardHeader>
               <CardTitle>数据统计</CardTitle>
+              {selectedMonth !== null && (
+                <CardDescription>{selectedMonth}月份策略表现综合分析</CardDescription>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {strategies.map((strategy, index) => {
-                  const latestData = strategy.data[strategy.data.length - 1]
-                  const maxReturn = Math.max(...strategy.data.map(d => d.returnRate))
-                  const minReturn = Math.min(...strategy.data.map(d => d.returnRate))
-                  
-                  return (
-                    <div
-                      key={strategy.name}
-                      className="space-y-2 p-4 rounded-lg border"
-                      style={{ borderColor: colors[index % colors.length] }}
-                    >
-                      <h4 className="font-semibold" style={{ color: colors[index % colors.length] }}>
-                        {strategy.name}
-                      </h4>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">最新收益率:</span>
-                          <span className={latestData?.returnRate >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            {latestData ? `${latestData.returnRate.toFixed(2)}%` : '-'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">最高收益率:</span>
-                          <span className="text-green-600">{maxReturn.toFixed(2)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">最低收益率:</span>
-                          <span className="text-red-600">{minReturn.toFixed(2)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">数据点数:</span>
-                          <span>{strategy.data.length}</span>
-                        </div>
+              {selectedMonth !== null && rankingInfo ? (
+                <div className="space-y-6">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="p-4 rounded-lg bg-green-50 border border-green-200 dark:bg-green-950 dark:border-green-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        <h4 className="font-semibold text-green-600">收益冠军</h4>
+                      </div>
+                      <p className="text-lg font-bold">{rankingInfo.bestAvg.name}</p>
+                      <p className="text-sm text-muted-foreground">平均月收益率: {rankingInfo.bestAvg.avgReturn.toFixed(2)}%</p>
+                      <p className="text-sm text-muted-foreground">累计收益: {rankingInfo.bestAvg.cumulativeReturn.toFixed(2)}%</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="h-4 w-4 text-blue-600" />
+                        <h4 className="font-semibold text-blue-600">胜率冠军</h4>
+                      </div>
+                      <p className="text-lg font-bold">{rankingInfo.bestWinRate.name}</p>
+                      <p className="text-sm text-muted-foreground">胜率: {rankingInfo.bestWinRate.winRate.toFixed(1)}%</p>
+                      <p className="text-sm text-muted-foreground">正收益次数: {rankingInfo.bestWinRate.positiveCount}/{rankingInfo.bestWinRate.count}</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-purple-50 border border-purple-200 dark:bg-purple-950 dark:border-purple-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="h-4 w-4 text-purple-600" />
+                        <h4 className="font-semibold text-purple-600">低波动冠军</h4>
+                      </div>
+                      <p className="text-lg font-bold">{rankingInfo.lowestRisk.name}</p>
+                      <p className="text-sm text-muted-foreground">标准差: {rankingInfo.lowestRisk.stdDev.toFixed(2)}%</p>
+                      <p className="text-sm text-muted-foreground">最大回撤: {rankingInfo.lowestRisk.minReturn.toFixed(2)}%</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-4">各策略详细数据</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 px-3">策略名称</th>
+                            <th className="text-right py-2 px-3">数据年数</th>
+                            <th className="text-right py-2 px-3">平均收益</th>
+                            <th className="text-right py-2 px-3">累计收益</th>
+                            <th className="text-right py-2 px-3">胜率</th>
+                            <th className="text-right py-2 px-3">最大收益</th>
+                            <th className="text-right py-2 px-3">最大亏损</th>
+                            <th className="text-right py-2 px-3">标准差</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {strategies.map((strategy, index) => {
+                            const stats = getStrategyStats(strategy)
+                            return (
+                              <tr key={strategy.name} className="border-b last:border-0">
+                                <td className="py-2 px-3 font-medium" style={{ color: colors[index % colors.length] }}>
+                                  {strategy.name}
+                                </td>
+                                <td className="text-right py-2 px-3">{stats.count}年</td>
+                                <td className={`text-right py-2 px-3 ${stats.avgReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {stats.avgReturn >= 0 ? '+' : ''}{stats.avgReturn.toFixed(2)}%
+                                </td>
+                                <td className={`text-right py-2 px-3 ${stats.cumulativeReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {stats.cumulativeReturn >= 0 ? '+' : ''}{stats.cumulativeReturn.toFixed(2)}%
+                                </td>
+                                <td className="text-right py-2 px-3">{stats.winRate?.toFixed(1)}%</td>
+                                <td className="text-right py-2 px-3 text-green-600">+{stats.maxReturn.toFixed(2)}%</td>
+                                <td className="text-right py-2 px-3 text-red-600">{stats.minReturn.toFixed(2)}%</td>
+                                <td className="text-right py-2 px-3">{stats.stdDev?.toFixed(2)}%</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3 border-t pt-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">收益排名</h4>
+                      <div className="space-y-1">
+                        {rankingInfo.rankingDetails.avg.map(r => (
+                          <div key={r.name} className="flex justify-between text-sm">
+                            <span style={{ color: colors[strategies.findIndex(s => s.name === r.name) % colors.length] }}>
+                              {r.name}
+                            </span>
+                            <span className="font-medium">第{r.rank}名</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">胜率排名</h4>
+                      <div className="space-y-1">
+                        {rankingInfo.rankingDetails.winRate.map(r => (
+                          <div key={r.name} className="flex justify-between text-sm">
+                            <span style={{ color: colors[strategies.findIndex(s => s.name === r.name) % colors.length] }}>
+                              {r.name}
+                            </span>
+                            <span className="font-medium">第{r.rank}名</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">稳定性排名</h4>
+                      <div className="space-y-1">
+                        {rankingInfo.rankingDetails.stdDev.map(r => (
+                          <div key={r.name} className="flex justify-between text-sm">
+                            <span style={{ color: colors[strategies.findIndex(s => s.name === r.name) % colors.length] }}>
+                              {r.name}
+                            </span>
+                            <span className="font-medium">第{r.rank}名</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {strategies.map((strategy, index) => {
+                    const latestData = strategy.data[strategy.data.length - 1]
+                    const maxReturn = Math.max(...strategy.data.map(d => d.returnRate))
+                    const minReturn = Math.min(...strategy.data.map(d => d.returnRate))
+                    
+                    return (
+                      <div
+                        key={strategy.name}
+                        className="space-y-2 p-4 rounded-lg border"
+                        style={{ borderColor: colors[index % colors.length] }}
+                      >
+                        <h4 className="font-semibold" style={{ color: colors[index % colors.length] }}>
+                          {strategy.name}
+                        </h4>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">最新收益率:</span>
+                            <span className={latestData?.returnRate >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {latestData ? `${latestData.returnRate.toFixed(2)}%` : '-'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">最高收益率:</span>
+                            <span className="text-green-600">{maxReturn.toFixed(2)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">最低收益率:</span>
+                            <span className="text-red-600">{minReturn.toFixed(2)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">数据点数:</span>
+                            <span>{strategy.data.length}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </>
