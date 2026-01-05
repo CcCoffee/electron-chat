@@ -1,4 +1,4 @@
-import { Home, Settings, Info, Code, Cloud, MessageSquare } from 'lucide-react'
+import { Home, Settings, Info, Code, Cloud, MessageSquare, TrendingUp } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavigationItem {
@@ -43,6 +43,11 @@ export const navigationItems: NavigationItem[] = [
     id: 'weather',
     label: 'Weather',
     icon: Cloud,
+  },
+  {
+    id: 'strategy',
+    label: '策略对比',
+    icon: TrendingUp,
   },
   {
     id: 'settings',

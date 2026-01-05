@@ -3,6 +3,7 @@ import { HomePage } from '@/pages/HomePage'
 import { FeaturesPage } from '@/pages/FeaturesPage'
 import { ChatPage } from '@/features/chat/ChatPage'
 import { WeatherPage } from '@/pages/WeatherPage'
+import { StrategyComparisonPage } from '@/pages/StrategyComparisonPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { AboutPage } from '@/pages/AboutPage'
 import type { PageId } from '@/config/navigation'
@@ -20,6 +21,7 @@ const pageComponents: Record<PageId, () => JSX.Element> = {
   features: FeaturesPage,
   chat: ChatPage, // Can be removed if chat feature is not needed
   weather: WeatherPage,
+  strategy: StrategyComparisonPage,
   settings: SettingsPage,
   about: AboutPage,
 }
