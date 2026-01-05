@@ -226,13 +226,34 @@ export function StrategyComparisonPage() {
       const monthlyData: Record<string, Record<string, number>> = {}
 
       strategies.forEach(strategy => {
+        const yearData: Record<number, Array<{date: string, returnRate: number}>> = {}
+
         strategy.data.forEach(point => {
           if (point.month === selectedMonth) {
-            const key = `${point.year}-${String(point.month).padStart(2, '0')}`
-            if (!monthlyData[key]) {
-              monthlyData[key] = { year: point.year, month: point.month }
+            if (!yearData[point.year]) {
+              yearData[point.year] = []
             }
-            monthlyData[key][strategy.name] = point.returnRate
+            yearData[point.year].push({
+              date: point.date,
+              returnRate: point.returnRate
+            })
+          }
+        })
+
+        Object.entries(yearData).forEach(([year, points]) => {
+          if (points.length >= 2) {
+            const sortedPoints = points.sort((a, b) => a.date.localeCompare(b.date))
+            const firstPoint = sortedPoints[0]
+            const lastPoint = sortedPoints[sortedPoints.length - 1]
+            
+            const monthlyReturn = ((1 + lastPoint.returnRate / 100) / (1 + firstPoint.returnRate / 100) - 1) * 100
+
+            const yearNum = parseInt(year)
+            const key = `${yearNum}年${selectedMonth}月`
+            if (!monthlyData[key]) {
+              monthlyData[key] = { year: yearNum, month: selectedMonth }
+            }
+            monthlyData[key][strategy.name] = monthlyReturn
           }
         })
       })
@@ -240,9 +261,13 @@ export function StrategyComparisonPage() {
       return Object.entries(monthlyData)
         .map(([key, values]) => ({
           date: key,
-          ...values,
+          year: values.year,
+          month: values.month,
+          ...Object.fromEntries(
+            Object.entries(values).filter(([k]) => k !== 'year' && k !== 'month')
+          ),
         }))
-        .sort((a, b) => a.date.localeCompare(b.date))
+        .sort((a, b) => a.year - b.year)
     } else {
       const allDates = new Set<string>()
       strategies.forEach(s => s.data.forEach(d => allDates.add(d.date)))
