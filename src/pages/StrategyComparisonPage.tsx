@@ -241,14 +241,29 @@ export function StrategyComparisonPage() {
         })
 
         Object.entries(yearData).forEach(([year, points]) => {
-          if (points.length >= 2) {
+          if (points.length >= 1) {
             const sortedPoints = points.sort((a, b) => a.date.localeCompare(b.date))
-            const firstPoint = sortedPoints[0]
-            const lastPoint = sortedPoints[sortedPoints.length - 1]
+            const lastDayOfMonth = sortedPoints[sortedPoints.length - 1]
+            const firstDayOfMonth = sortedPoints[0]
             
-            const monthlyReturn = ((1 + lastPoint.returnRate / 100) / (1 + firstPoint.returnRate / 100) - 1) * 100
-
             const yearNum = parseInt(year)
+            const prevYear = selectedMonth === 1 ? yearNum - 1 : yearNum
+            const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1
+            
+            const prevMonthLastDay = strategy.data
+              .filter(d => d.year === prevYear && d.month === prevMonth)
+              .sort((a, b) => a.date.localeCompare(b.date))
+              .pop()
+
+            let initialReturnRate: number
+            if (prevMonthLastDay) {
+              initialReturnRate = prevMonthLastDay.returnRate
+            } else {
+              initialReturnRate = firstDayOfMonth.returnRate
+            }
+
+            const monthlyReturn = ((1 + lastDayOfMonth.returnRate / 100) / (1 + initialReturnRate / 100) - 1) * 100
+
             const key = `${yearNum}年${selectedMonth}月`
             if (!monthlyData[key]) {
               monthlyData[key] = { year: yearNum, month: selectedMonth }
