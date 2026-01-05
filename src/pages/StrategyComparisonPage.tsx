@@ -274,7 +274,7 @@ export function StrategyComparisonPage() {
   }
 
   const chartData = getChartData()
-  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00c49f']
+  const colors = ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4']
 
   const getMonthOptions = () => {
     const months = new Set<number>()
@@ -714,15 +714,15 @@ export function StrategyComparisonPage() {
                                   {strategy.name}
                                 </td>
                                 <td className="text-right py-2 px-3">{stats.count}年</td>
-                                <td className={`text-right py-2 px-3 ${stats.avgReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <td className={`text-right py-2 px-3 ${stats.avgReturn >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                                   {stats.avgReturn >= 0 ? '+' : ''}{stats.avgReturn.toFixed(2)}%
                                 </td>
-                                <td className={`text-right py-2 px-3 ${stats.cumulativeReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <td className={`text-right py-2 px-3 ${stats.cumulativeReturn >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                                   {stats.cumulativeReturn >= 0 ? '+' : ''}{stats.cumulativeReturn.toFixed(2)}%
                                 </td>
                                 <td className="text-right py-2 px-3">{stats.winRate?.toFixed(1)}%</td>
-                                <td className="text-right py-2 px-3 text-green-600">+{stats.maxReturn.toFixed(2)}%</td>
-                                <td className="text-right py-2 px-3 text-red-600">{stats.minReturn.toFixed(2)}%</td>
+                                <td className="text-right py-2 px-3 text-red-600">+{stats.maxReturn.toFixed(2)}%</td>
+                                <td className="text-right py-2 px-3 text-green-600">{stats.minReturn.toFixed(2)}%</td>
                                 <td className="text-right py-2 px-3">{stats.stdDev?.toFixed(2)}%</td>
                               </tr>
                             )
@@ -799,13 +799,13 @@ export function StrategyComparisonPage() {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">总收益</span>
-                              <span className={stats.totalReturn! >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                              <span className={stats.totalReturn! >= 0 ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
                                 {stats.totalReturn! >= 0 ? '+' : ''}{stats.totalReturn!.toFixed(2)}%
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">年化收益</span>
-                              <span className={stats.annualizedReturn! >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                              <span className={stats.annualizedReturn! >= 0 ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
                                 {stats.annualizedReturn! >= 0 ? '+' : ''}{stats.annualizedReturn!.toFixed(2)}%
                               </span>
                             </div>
@@ -815,11 +815,11 @@ export function StrategyComparisonPage() {
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">最大回撤</span>
-                              <span className="text-red-600">-{stats.maxDrawdown!.toFixed(2)}%</span>
+                              <span className="text-green-600">-{stats.maxDrawdown!.toFixed(2)}%</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">夏普比率</span>
-                              <span className={stats.sharpeRatio! >= 0 ? 'text-blue-600 font-medium' : 'text-red-600 font-medium'}>
+                              <span className={stats.sharpeRatio! >= 0 ? 'text-red-600 font-medium' : 'text-green-600 font-medium'}>
                                 {stats.sharpeRatio!.toFixed(2)}
                               </span>
                             </div>
@@ -859,19 +859,19 @@ export function StrategyComparisonPage() {
                                   {strategy.name}
                                 </td>
                                 <td className="text-right py-2 px-3">{stats.count}</td>
-                                <td className={`text-right py-2 px-3 font-medium ${stats.totalReturn! >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <td className={`text-right py-2 px-3 font-medium ${stats.totalReturn! >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                                   {stats.totalReturn! >= 0 ? '+' : ''}{stats.totalReturn!.toFixed(2)}%
                                 </td>
-                                <td className={`text-right py-2 px-3 font-medium ${stats.annualizedReturn! >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <td className={`text-right py-2 px-3 font-medium ${stats.annualizedReturn! >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                                   {stats.annualizedReturn! >= 0 ? '+' : ''}{stats.annualizedReturn!.toFixed(2)}%
                                 </td>
                                 <td className="text-right py-2 px-3">{stats.winRate!.toFixed(1)}%</td>
-                                <td className="text-right py-2 px-3 text-red-600">-{stats.maxDrawdown!.toFixed(2)}%</td>
-                                <td className={`text-right py-2 px-3 font-medium ${stats.sharpeRatio! >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                                <td className="text-right py-2 px-3 text-green-600">-{stats.maxDrawdown!.toFixed(2)}%</td>
+                                <td className={`text-right py-2 px-3 font-medium ${stats.sharpeRatio! >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                                   {stats.sharpeRatio!.toFixed(2)}
                                 </td>
-                                <td className="text-right py-2 px-3 text-green-600">+{stats.bestDay!.toFixed(2)}%</td>
-                                <td className="text-right py-2 px-3 text-red-600">{stats.worstDay!.toFixed(2)}%</td>
+                                <td className="text-right py-2 px-3 text-red-600">+{stats.bestDay!.toFixed(2)}%</td>
+                                <td className="text-right py-2 px-3 text-green-600">{stats.worstDay!.toFixed(2)}%</td>
                               </tr>
                             )
                           })}
