@@ -12,7 +12,7 @@ export function Sidebar() {
     <aside className="flex h-screen w-64 flex-col border-r bg-card">
       {/* App Title */}
       <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-lg font-semibold">Electron App</h1>
+        <h1 className="text-lg font-semibold">量化交易工具</h1>
       </div>
 
       {/* Navigation Items */}

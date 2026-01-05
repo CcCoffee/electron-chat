@@ -1,7 +1,7 @@
 {
-  "name": "electron-boilerplate",
+  "name": "quant-trading-tool",
   "version": "1.0.0",
-  "description": "A modern Electron boilerplate with React, Vite, TypeScript, and shadcn/ui",
+  "description": "A quantitative trading desktop application",
   "main": "dist-electron/main/index.js",
   "author": "Your Name",
   "license": "MIT",

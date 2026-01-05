@@ -34,7 +34,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    title: 'Electron Boilerplate',
+    title: '量化交易工具',
     backgroundColor: '#ffffff',
   })
 

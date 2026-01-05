@@ -52,9 +52,9 @@ export function AboutPage() {
       {/* App Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Electron Boilerplate</CardTitle>
+          <CardTitle>量化交易工具</CardTitle>
           <CardDescription>
-            A modern, production-ready Electron application template
+            一个专业的量化交易桌面应用
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -63,8 +63,7 @@ export function AboutPage() {
             <Badge variant="outline">MIT License</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            This boilerplate provides a solid foundation for building cross-platform desktop
-            applications with React, TypeScript, and modern development tools.
+            本应用提供专业的量化交易策略对比和回测功能，帮助您做出更明智的投资决策。
           </p>
         </CardContent>
       </Card>

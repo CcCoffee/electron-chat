@@ -30,7 +30,6 @@ function parseCSV(content: string, fileName: string): StrategyData | null {
   }
 
   const headers = lines[0].split(',').map(h => h.trim())
-  console.log('Headers:', headers)
   
   const dateIndex = headers.findIndex(h => h === '日期')
   const marketValueIndex = headers.findIndex(h => h === '市值/价值')
@@ -45,8 +44,6 @@ function parseCSV(content: string, fileName: string): StrategyData | null {
     console.log('Available headers:', headers)
     return null
   }
-
-  console.log('Using column: marketValue=', headers[marketValueIndex])
 
   const dailyData = new Map<string, number>()
 
@@ -90,15 +87,9 @@ function parseCSV(content: string, fileName: string): StrategyData | null {
     }
   }
 
-  console.log('Parsed data points:', data.length)
-
   if (data.length === 0) {
-    console.log('No valid data points found')
     return null
   }
-
-  console.log('First data point:', data[0])
-  console.log('Last data point:', data[data.length - 1])
 
   return {
     name: fileName.replace('.csv', ''),
@@ -127,26 +118,19 @@ export function StrategyComparisonPage() {
   }, [])
 
   const processFiles = useCallback(async (files: File[]) => {
-    console.log('Processing files:', files.length)
     const csvFiles = files.filter(f => f.name.endsWith('.csv'))
-    console.log('CSV files found:', csvFiles.length)
     
     for (const file of csvFiles) {
-      console.log('Processing file:', file.name)
       try {
         const content = await readFileAsText(file)
-        console.log('File content length:', content.length)
         const parsed = parseCSV(content, file.name)
         
         if (parsed) {
-          console.log('Parsed successfully:', parsed.name, 'Data points:', parsed.data.length)
           setStrategies(prev => {
             const existing = prev.find(s => s.name === parsed.name)
             if (existing) {
-              console.log('Updating existing strategy:', parsed.name)
               return prev.map(s => s.name === parsed.name ? parsed : s)
             }
-            console.log('Adding new strategy:', parsed.name)
             return [...prev, parsed]
           })
         } else {
@@ -162,13 +146,8 @@ export function StrategyComparisonPage() {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    console.log('Drop event triggered')
-    console.log('DataTransfer:', e.dataTransfer)
-    console.log('Files:', e.dataTransfer.files)
-    console.log('Files length:', e.dataTransfer.files.length)
 
     const files = Array.from(e.dataTransfer.files)
-    console.log('Processing dropped files:', files.length)
     processFiles(files)
   }, [processFiles])
 
@@ -186,22 +165,16 @@ export function StrategyComparisonPage() {
       
       const gbkDecoder = new TextDecoder('gbk')
       const gbkText = gbkDecoder.decode(arrayBuffer)
-      console.log('Decoded with GBK')
       
       const headers = gbkText.split('\n')[0].split(',').map(h => h.trim())
-      console.log('GBK headers:', headers)
       
       const hasExpectedHeaders = headers.some(h => h === '日期' || h === '累计盈亏比例')
       
       if (hasExpectedHeaders) {
-        console.log('Expected Chinese headers found, using GBK encoding')
         return gbkText
       } else {
-        console.log('Expected headers not found in GBK, trying UTF-8')
         const utf8Decoder = new TextDecoder('utf-8')
         const utf8Text = utf8Decoder.decode(arrayBuffer)
-        console.log('Decoded with UTF-8')
-        console.log('UTF-8 headers:', utf8Text.split('\n')[0].split(',').map(h => h.trim()))
         return utf8Text
       }
     } catch (error) {

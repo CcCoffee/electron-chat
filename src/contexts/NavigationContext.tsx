@@ -13,7 +13,7 @@ interface NavigationProviderProps {
   defaultPage?: PageId
 }
 
-export function NavigationProvider({ children, defaultPage = 'home' }: NavigationProviderProps) {
+export function NavigationProvider({ children, defaultPage = 'strategy' }: NavigationProviderProps) {
   const [currentPage, setCurrentPage] = useState<PageId>(defaultPage)
 
   const navigateTo = useCallback((pageId: PageId) => {

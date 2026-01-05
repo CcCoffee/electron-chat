@@ -24,6 +24,11 @@ export interface NavigationItem {
  */
 export const navigationItems: NavigationItem[] = [
   {
+    id: 'strategy',
+    label: '策略对比',
+    icon: TrendingUp,
+  },
+  {
     id: 'home',
     label: 'Home',
     icon: Home,
@@ -43,11 +48,6 @@ export const navigationItems: NavigationItem[] = [
     id: 'weather',
     label: 'Weather',
     icon: Cloud,
-  },
-  {
-    id: 'strategy',
-    label: '策略对比',
-    icon: TrendingUp,
   },
   {
     id: 'settings',
