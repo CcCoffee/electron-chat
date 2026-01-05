@@ -322,6 +322,13 @@ export function StrategyComparisonPage() {
     cumulativeReturn: number
     latestReturn?: number
     monthlyReturns?: number[]
+    totalReturn?: number
+    annualizedReturn?: number
+    maxDrawdown?: number
+    annualizedVolatility?: number
+    sharpeRatio?: number
+    bestDay?: number
+    worstDay?: number
   } => {
     if (selectedMonth !== null) {
       const monthlyReturns: number[] = []
@@ -396,13 +403,56 @@ export function StrategyComparisonPage() {
       const maxReturn = Math.max(...returns)
       const minReturn = Math.min(...returns)
       
+      const totalDays = strategy.data.length
+      const years = totalDays / 252
+      const totalReturn = ((1 + latestData.returnRate / 100) - 1) * 100
+      const annualizedReturn = years > 0 ? (Math.pow(1 + totalReturn / 100, 1 / years) - 1) * 100 : 0
+      
+      const dailyReturns: number[] = []
+      for (let i = 1; i < strategy.data.length; i++) {
+        const prevReturn = strategy.data[i - 1].returnRate
+        const currReturn = strategy.data[i].returnRate
+        const dailyReturn = ((1 + currReturn / 100) / (1 + prevReturn / 100) - 1) * 100
+        dailyReturns.push(dailyReturn)
+      }
+      
+      const positiveDays = dailyReturns.filter(r => r > 0).length
+      const negativeDays = dailyReturns.filter(r => r < 0).length
+      const avgDailyReturn = dailyReturns.reduce((sum, r) => sum + r, 0) / dailyReturns.length
+      const dailyVariance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - avgDailyReturn, 2), 0) / dailyReturns.length
+      const dailyStdDev = Math.sqrt(dailyVariance)
+      const annualizedVolatility = dailyStdDev * Math.sqrt(252)
+      const sharpeRatio = dailyStdDev > 0 ? (annualizedReturn - 0.03) / annualizedVolatility : 0
+      
+      let maxDrawdown = 0
+      let peakValue = 1 + returns[0] / 100
+      for (const ret of returns) {
+        const currentValue = 1 + ret / 100
+        if (currentValue > peakValue) peakValue = currentValue
+        const drawdown = (peakValue - currentValue) / peakValue * 100
+        if (drawdown > maxDrawdown) maxDrawdown = drawdown
+      }
+      
+      const bestDay = Math.max(...dailyReturns)
+      const worstDay = Math.min(...dailyReturns)
+      
       return {
-        count: strategy.data.length,
+        count: totalDays,
         latestReturn: latestData?.returnRate ?? 0,
+        totalReturn,
+        annualizedReturn,
         maxReturn,
         minReturn,
-        avgReturn: 0,
-        cumulativeReturn: latestData?.returnRate ?? 0
+        avgReturn: avgDailyReturn,
+        cumulativeReturn: latestData?.returnRate ?? 0,
+        positiveCount: positiveDays,
+        negativeCount: negativeDays,
+        winRate: dailyReturns.length > 0 ? (positiveDays / dailyReturns.length) * 100 : 0,
+        maxDrawdown,
+        annualizedVolatility,
+        sharpeRatio,
+        bestDay,
+        worstDay
       }
     }
   }
@@ -752,44 +802,177 @@ export function StrategyComparisonPage() {
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {strategies.map((strategy, index) => {
-                    const latestData = strategy.data[strategy.data.length - 1]
-                    const maxReturn = Math.max(...strategy.data.map(d => d.returnRate))
-                    const minReturn = Math.min(...strategy.data.map(d => d.returnRate))
-                    
-                    return (
-                      <div
-                        key={strategy.name}
-                        className="space-y-2 p-4 rounded-lg border"
-                        style={{ borderColor: colors[index % colors.length] }}
-                      >
-                        <h4 className="font-semibold" style={{ color: colors[index % colors.length] }}>
-                          {strategy.name}
-                        </h4>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">最新收益率:</span>
-                            <span className={latestData?.returnRate >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {latestData ? `${latestData.returnRate.toFixed(2)}%` : '-'}
-                            </span>
+                <div className="space-y-6">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {strategies.map((strategy, index) => {
+                      const stats = getStrategyStats(strategy)
+                      
+                      return (
+                        <div
+                          key={strategy.name}
+                          className="p-4 rounded-lg border"
+                          style={{ borderColor: colors[index % colors.length] }}
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: colors[index % colors.length] }}
+                            />
+                            <h4 className="font-semibold" style={{ color: colors[index % colors.length] }}>
+                              {strategy.name}
+                            </h4>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">最高收益率:</span>
-                            <span className="text-green-600">{maxReturn.toFixed(2)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">最低收益率:</span>
-                            <span className="text-red-600">{minReturn.toFixed(2)}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">数据点数:</span>
-                            <span>{strategy.data.length}</span>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">总收益</span>
+                              <span className={stats.totalReturn! >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                {stats.totalReturn! >= 0 ? '+' : ''}{stats.totalReturn!.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">年化收益</span>
+                              <span className={stats.annualizedReturn! >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                                {stats.annualizedReturn! >= 0 ? '+' : ''}{stats.annualizedReturn!.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">胜率</span>
+                              <span className="font-medium">{stats.winRate!.toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">最大回撤</span>
+                              <span className="text-red-600">-{stats.maxDrawdown!.toFixed(2)}%</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">夏普比率</span>
+                              <span className={stats.sharpeRatio! >= 0 ? 'text-blue-600 font-medium' : 'text-red-600 font-medium'}>
+                                {stats.sharpeRatio!.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">波动率</span>
+                              <span>{stats.annualizedVolatility!.toFixed(2)}%</span>
+                            </div>
                           </div>
                         </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-4">综合数据对比</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 px-3">策略</th>
+                            <th className="text-right py-2 px-3">数据天数</th>
+                            <th className="text-right py-2 px-3">总收益</th>
+                            <th className="text-right py-2 px-3">年化收益</th>
+                            <th className="text-right py-2 px-3">胜率</th>
+                            <th className="text-right py-2 px-3">最大回撤</th>
+                            <th className="text-right py-2 px-3">夏普</th>
+                            <th className="text-right py-2 px-3">最佳日</th>
+                            <th className="text-right py-2 px-3">最差日</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {strategies.map((strategy, index) => {
+                            const stats = getStrategyStats(strategy)
+                            return (
+                              <tr key={strategy.name} className="border-b last:border-0">
+                                <td className="py-2 px-3 font-medium" style={{ color: colors[index % colors.length] }}>
+                                  {strategy.name}
+                                </td>
+                                <td className="text-right py-2 px-3">{stats.count}</td>
+                                <td className={`text-right py-2 px-3 font-medium ${stats.totalReturn! >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {stats.totalReturn! >= 0 ? '+' : ''}{stats.totalReturn!.toFixed(2)}%
+                                </td>
+                                <td className={`text-right py-2 px-3 font-medium ${stats.annualizedReturn! >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {stats.annualizedReturn! >= 0 ? '+' : ''}{stats.annualizedReturn!.toFixed(2)}%
+                                </td>
+                                <td className="text-right py-2 px-3">{stats.winRate!.toFixed(1)}%</td>
+                                <td className="text-right py-2 px-3 text-red-600">-{stats.maxDrawdown!.toFixed(2)}%</td>
+                                <td className={`text-right py-2 px-3 font-medium ${stats.sharpeRatio! >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                                  {stats.sharpeRatio!.toFixed(2)}
+                                </td>
+                                <td className="text-right py-2 px-3 text-green-600">+{stats.bestDay!.toFixed(2)}%</td>
+                                <td className="text-right py-2 px-3 text-red-600">{stats.worstDay!.toFixed(2)}%</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 border-t pt-4">
+                    <div>
+                      <h4 className="font-semibold mb-2 text-sm text-muted-foreground">收益排名</h4>
+                      <div className="space-y-1">
+                        {strategies
+                          .map(s => ({ name: s.name, value: getStrategyStats(s).annualizedReturn }))
+                          .sort((a, b) => b.value! - a.value!)
+                          .map((s, i) => (
+                            <div key={s.name} className="flex justify-between text-sm">
+                              <span style={{ color: colors[strategies.findIndex(x => x.name === s.name) % colors.length] }}>
+                                {s.name}
+                              </span>
+                              <span className="font-medium">第{i + 1}名</span>
+                            </div>
+                          ))}
                       </div>
-                    )
-                  })}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2 text-sm text-muted-foreground">胜率排名</h4>
+                      <div className="space-y-1">
+                        {strategies
+                          .map(s => ({ name: s.name, value: getStrategyStats(s).winRate }))
+                          .sort((a, b) => b.value! - a.value!)
+                          .map((s, i) => (
+                            <div key={s.name} className="flex justify-between text-sm">
+                              <span style={{ color: colors[strategies.findIndex(x => x.name === s.name) % colors.length] }}>
+                                {s.name}
+                              </span>
+                              <span className="font-medium">第{i + 1}名</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2 text-sm text-muted-foreground">回撤排名</h4>
+                      <div className="space-y-1">
+                        {strategies
+                          .map(s => ({ name: s.name, value: getStrategyStats(s).maxDrawdown }))
+                          .sort((a, b) => a.value! - b.value!)
+                          .map((s, i) => (
+                            <div key={s.name} className="flex justify-between text-sm">
+                              <span style={{ color: colors[strategies.findIndex(x => x.name === s.name) % colors.length] }}>
+                                {s.name}
+                              </span>
+                              <span className="font-medium">第{i + 1}名</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2 text-sm text-muted-foreground">夏普排名</h4>
+                      <div className="space-y-1">
+                        {strategies
+                          .map(s => ({ name: s.name, value: getStrategyStats(s).sharpeRatio }))
+                          .sort((a, b) => b.value! - a.value!)
+                          .map((s, i) => (
+                            <div key={s.name} className="flex justify-between text-sm">
+                              <span style={{ color: colors[strategies.findIndex(x => x.name === s.name) % colors.length] }}>
+                                {s.name}
+                              </span>
+                              <span className="font-medium">第{i + 1}名</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
