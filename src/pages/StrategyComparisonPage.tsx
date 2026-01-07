@@ -274,7 +274,7 @@ export function StrategyComparisonPage() {
   }
 
   const chartData = getChartData()
-  const colors = ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4']
+    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00c49f']
 
   const getMonthOptions = () => {
     const months = new Set<number>()

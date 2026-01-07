@@ -85,8 +85,8 @@
     "vitest": "^2.1.2"
   },
   "build": {
-    "appId": "com.electron.boilerplate",
-    "productName": "Electron Boilerplate",
+    "appId": "com.quanttradingtool",
+    "productName": "量化交易工具",
     "directories": {
       "output": "release/${version}"
     },
